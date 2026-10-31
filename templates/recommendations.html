@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Personalized Recommendations — AI Student Hub{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Personalized Learning Recommendations</h1>
+        <p class="page-subtitle">Algorithmic, rule-based suggestions driven by your actual quiz attempt scores.</p>
+    </div>
+</div>
+
+<!-- Recommendation System Methodology Explanation -->
+<div class="info-callout-card">
+    <div class="callout-icon">💡</div>
+    <div class="callout-body">
+        <h4>How AI Student Hub Evaluates Your Performance</h4>
+        <p>Our rule-based engine categorizes each topic into three deterministic proficiency tiers:</p>
+        <ul class="tier-rules-list">
+            <li><span class="badge badge-danger">Priority Practice (< {{ rec.thresholds.competent }}%)</span> Weak accuracy. Requires concept revision and re-testing.</li>
+            <li><span class="badge badge-warning">Additional Practice ({{ rec.thresholds.competent }}% – {{ rec.thresholds.mastery - 0.1 }}%)</span> Good foundation, but mistakes present on edge cases.</li>
+            <li><span class="badge badge-success">Mastered (&ge; {{ rec.thresholds.mastery }}%)</span> Excellent grasp. Ready for advanced topics.</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Recommended Action Highlight -->
+<div class="recommendation-banner mb-4">
+    <div class="rec-icon">🎯</div>
+    <div class="rec-content">
+        <h4>Top Actionable Recommendation</h4>
+        <p>{{ rec.recommended_next_action }}</p>
+    </div>
+    {% if rec.focus_topic %}
+        <a href="{{ url_for('start_quiz', topic_id=rec.focus_topic.topic_id) }}" class="btn btn-primary btn-sm">
+            Take Topic Quiz &rarr;
+        </a>
+    {% endif %}
+</div>
+
+<!-- Grouped Recommendations Grids -->
+<div class="recommendation-sections">
+    <!-- 1. Priority Practice -->
+    <div class="content-card mb-4">
+        <div class="card-header">
+            <h3>🔴 High-Priority Practice Areas</h3>
+            <span class="badge badge-danger">{{ rec.priority_topics|length }} Topic(s)</span>
+        </div>
+        {% if rec.priority_topics %}
+            <div class="rec-grid">
+                {% for t in rec.priority_topics %}
+                    <div class="rec-card border-danger">
+                        <div class="rec-card-top">
+                            <span class="badge badge-danger">{{ t.avg_percentage }}% Accuracy</span>
+                            <span class="rec-subj">{{ t.subject_name }}</span>
+                        </div>
+                        <h4>{{ t.topic_name }}</h4>
+                        <p class="rec-desc">This topic has lower retention. Review syllabus notes before re-attempting.</p>
+                        <a href="{{ url_for('start_quiz', topic_id=t.topic_id) }}" class="btn btn-primary btn-sm btn-block">
+                            Retake Quiz &rarr;
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No weak topics flagged under {{ rec.thresholds.competent }}%. Great job maintaining high baseline accuracy!</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 2. Additional Practice -->
+    <div class="content-card mb-4">
+        <div class="card-header">
+            <h3>🟡 Recommended for Additional Practice</h3>
+            <span class="badge badge-warning">{{ rec.practice_topics|length }} Topic(s)</span>
+        </div>
+        {% if rec.practice_topics %}
+            <div class="rec-grid">
+                {% for t in rec.practice_topics %}
+                    <div class="rec-card border-warning">
+                        <div class="rec-card-top">
+                            <span class="badge badge-warning">{{ t.avg_percentage }}% Accuracy</span>
+                            <span class="rec-subj">{{ t.subject_name }}</span>
+                        </div>
+                        <h4>{{ t.topic_name }}</h4>
+                        <p class="rec-desc">Good conceptual grasp. Practice again to cross the 80% mastery mark.</p>
+                        <a href="{{ url_for('start_quiz', topic_id=t.topic_id) }}" class="btn btn-outline btn-sm btn-block">
+                            Practice &rarr;
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No topics currently in the intermediate practice bracket.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 3. Mastered Topics -->
+    <div class="content-card mb-4">
+        <div class="card-header">
+            <h3>🟢 Mastered Topics</h3>
+            <span class="badge badge-success">{{ rec.mastered_topics|length }} Topic(s)</span>
+        </div>
+        {% if rec.mastered_topics %}
+            <div class="rec-grid">
+                {% for t in rec.mastered_topics %}
+                    <div class="rec-card border-success">
+                        <div class="rec-card-top">
+                            <span class="badge badge-success">{{ t.avg_percentage }}% Accuracy</span>
+                            <span class="rec-subj">{{ t.subject_name }}</span>
+                        </div>
+                        <h4>{{ t.topic_name }}</h4>
+                        <p class="rec-desc">Consistent high performance. Excellent conceptual foundation.</p>
+                        <a href="{{ url_for('start_quiz', topic_id=t.topic_id) }}" class="btn btn-outline btn-sm btn-block">
+                            Review Quiz
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Keep practicing topics to achieve score &ge; {{ rec.thresholds.mastery }}% and unlock mastery badges.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 4. Unattempted Topics -->
+    {% if rec.unattempted_topics %}
+        <div class="content-card">
+            <div class="card-header">
+                <h3>⚪ Unattempted Topics to Explore Next</h3>
+                <span class="badge badge-neutral">{{ rec.unattempted_topics|length }} Topic(s)</span>
+            </div>
+            <div class="rec-grid">
+                {% for t in rec.unattempted_topics %}
+                    <div class="rec-card">
+                        <div class="rec-card-top">
+                            <span class="badge badge-neutral">Not Attempted</span>
+                            <span class="rec-subj">{{ t.subject_name }}</span>
+                        </div>
+                        <h4>{{ t.topic_name }}</h4>
+                        <p class="rec-desc">Explore this syllabus module to expand your domain knowledge.</p>
+                        <a href="{{ url_for('start_quiz', topic_id=t.topic_id) }}" class="btn btn-primary btn-sm btn-block">
+                            Start Quiz &rarr;
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Student Quiz Records — AI Student Hub Admin{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('admin_dashboard') }}">&larr; Back to Admin Dashboard</a>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Student Evaluation Records</h1>
+        <p class="page-subtitle">Platform-wide log of student quiz submissions and calculated performance metrics.</p>
+    </div>
+</div>
+
+<div class="content-card">
+    {% if attempts %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Student Name</th>
+                        <th>Email</th>
+                        <th>Subject & Topic</th>
+                        <th>Score</th>
+                        <th>Percentage</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in attempts %}
+                        <tr>
+                            <td>{{ a.attempted_at[:16] }}</td>
+                            <td><strong>{{ a.student_name }}</strong></td>
+                            <td>{{ a.student_email }}</td>
+                            <td>{{ a.subject_name }} &rarr; <em>{{ a.topic_name }}</em></td>
+                            <td>{{ a.score }} / {{ a.total_questions }}</td>
+                            <td>
+                                <strong class="{% if a.percentage >= 80 %}text-success{% elif a.percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ a.percentage }}%
+                                </strong>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('view_result', attempt_id=a.id) }}" class="btn btn-outline btn-sm">
+                                    Audit Attempt &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>No student quiz attempts recorded across the platform yet.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Performance Analysis — AI Student Hub{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Performance Analysis</h1>
+        <p class="page-subtitle">Deep dive into your subject proficiencies and granular topic accuracies.</p>
+    </div>
+    <div class="header-action">
+        <a href="{{ url_for('recommendations_view') }}" class="btn btn-outline">View Recommendations &rarr;</a>
+    </div>
+</div>
+
+<!-- Subject-Wise Mastery Progress Section -->
+<div class="content-card mb-4">
+    <div class="card-header">
+        <h3>Subject-Wise Aggregate Mastery</h3>
+    </div>
+    {% if subject_stats %}
+        <div class="subject-analysis-grid">
+            {% for s in subject_stats %}
+                <div class="subject-box">
+                    <div class="sb-header">
+                        <h4>{{ s.subject_name }}</h4>
+                        <span class="sb-badge {% if s.avg_percentage >= 80 %}text-success{% elif s.avg_percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">
+                            {{ s.avg_percentage }}%
+                        </span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill {% if s.avg_percentage >= 80 %}bg-success{% elif s.avg_percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ s.avg_percentage }}%;"></div>
+                    </div>
+                    <p class="sb-subtext">{{ s.attempts_count }} total quiz attempts recorded.</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>No subject performance data available yet. Please complete topic quizzes to generate data.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Detailed Topic-By-Topic Breakdown Table -->
+<div class="content-card">
+    <div class="card-header">
+        <h3>Granular Topic Performance</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Topic</th>
+                    <th>Attempts</th>
+                    <th>Average Accuracy</th>
+                    <th>Proficiency Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in topic_metrics %}
+                    <tr>
+                        <td><strong>{{ t.subject_name }}</strong></td>
+                        <td>{{ t.topic_name }}</td>
+                        <td>{{ t.attempts_count }}</td>
+                        <td>
+                            {% if t.attempts_count > 0 %}
+                                <strong class="{% if t.avg_percentage >= 80 %}text-success{% elif t.avg_percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ t.avg_percentage }}%
+                                </strong>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {{ t.badge_class }}">{{ t.status }}</span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('start_quiz', topic_id=t.topic_id) }}" class="btn btn-outline btn-sm">
+                                {% if t.attempts_count > 0 %}Practice Again{% else %}Start Quiz{% endif %}
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

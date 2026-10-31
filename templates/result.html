@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Results: {{ attempt.topic_name }} — AI Student Hub{% endblock %}
+
+{% block content %}
+<div class="result-summary-card">
+    <div class="result-badge">Evaluation Complete</div>
+    <h2>Quiz Performance Report</h2>
+    <p class="result-subtitle">{{ attempt.subject_name }} &bull; <strong>{{ attempt.topic_name }}</strong></p>
+    <p class="result-date">Attempted on: {{ attempt.attempted_at }}</p>
+
+    <div class="score-circular-metric">
+        <div class="score-large {% if attempt.percentage >= 80 %}text-success{% elif attempt.percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">
+            {{ attempt.percentage }}%
+        </div>
+        <div class="score-label">Score: {{ attempt.score }} / {{ attempt.total_questions }}</div>
+    </div>
+
+    <!-- Rule-Based Performance Feedback -->
+    <div class="performance-feedback-box {% if attempt.percentage >= 80 %}fb-success{% elif attempt.percentage >= 60 %}fb-warning{% else %}fb-danger{% endif %}">
+        {% if attempt.percentage >= 80 %}
+            <h4>🌟 Outstanding Mastery!</h4>
+            <p>You have demonstrated high proficiency in this topic. You are ready to explore higher-level topics or attempt challenging algorithmic questions.</p>
+        {% elif attempt.percentage >= 60 %}
+            <h4>👍 Competent, Additional Practice Recommended</h4>
+            <p>You have a solid conceptual foundation, but a few questions tripped you up. Review the explanations below and re-test to cross the 80% threshold.</p>
+        {% else %}
+            <h4>⚠️ Priority Practice Required (< 60%)</h4>
+            <p>This topic is currently flagged as a weak area in your learning profile. Carefully read the concept explanations below and retake the quiz to build confidence.</p>
+        {% endif %}
+    </div>
+
+    <!-- Optional AI Study Assistant Coach Feedback -->
+    {% if ai_analysis %}
+        <div class="ai-coach-card">
+            <div class="ai-coach-header">
+                <div class="ai-coach-title">
+                    <span class="ai-icon">🤖</span>
+                    <h3>AI Study Coach Analysis</h3>
+                </div>
+                <span class="badge badge-info">{{ ai_analysis.provider }}</span>
+            </div>
+            <div class="ai-coach-body">
+                <div class="ai-markdown-content">
+                    {{ ai_analysis.advice | replace('\n', '<br>') | safe }}
+                </div>
+                <div class="ai-disclaimer">
+                    ℹ️ <em>AI-generated diagnostic feedback. Deterministic score calculated independently by backend quiz engine.</em>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="result-actions">
+        <a href="{{ url_for('start_quiz', topic_id=attempt.topic_id) }}" class="btn btn-primary">Retake This Quiz</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Go to Dashboard</a>
+        <a href="{{ url_for('ai_tutor') }}" class="btn btn-outline">Ask AI Tutor &rarr;</a>
+    </div>
+</div>
+
+<div class="section-title-wrapper">
+    <h3>Detailed Question-by-Question Review</h3>
+    <p>Analyze your answers alongside the correct options and official explanations.</p>
+</div>
+
+<div class="review-questions-list">
+    {% for item in answers %}
+        <div class="review-card {% if item.is_correct %}review-correct{% else %}review-incorrect{% endif %}">
+            <div class="review-header">
+                <span class="review-qnum">Question {{ loop.index }}</span>
+                {% if item.is_correct %}
+                    <span class="badge badge-success">✓ Correct (+1 Mark)</span>
+                {% else %}
+                    <span class="badge badge-danger">✗ Incorrect (0 Marks)</span>
+                {% endif %}
+            </div>
+
+            <div class="review-question-text">
+                {{ item.question_text }}
+            </div>
+
+            <div class="review-options">
+                <div class="review-opt {% if item.correct_answer == 'A' %}opt-correct{% elif item.selected_answer == 'A' and not item.is_correct %}opt-wrong{% endif %}">
+                    <strong>A.</strong> {{ item.option_a }}
+                    {% if item.correct_answer == 'A' %}<span class="opt-tag tag-correct">Correct Answer</span>{% endif %}
+                    {% if item.selected_answer == 'A' and not item.is_correct %}<span class="opt-tag tag-selected">Your Choice</span>{% endif %}
+                </div>
+                <div class="review-opt {% if item.correct_answer == 'B' %}opt-correct{% elif item.selected_answer == 'B' and not item.is_correct %}opt-wrong{% endif %}">
+                    <strong>B.</strong> {{ item.option_b }}
+                    {% if item.correct_answer == 'B' %}<span class="opt-tag tag-correct">Correct Answer</span>{% endif %}
+                    {% if item.selected_answer == 'B' and not item.is_correct %}<span class="opt-tag tag-selected">Your Choice</span>{% endif %}
+                </div>
+                <div class="review-opt {% if item.correct_answer == 'C' %}opt-correct{% elif item.selected_answer == 'C' and not item.is_correct %}opt-wrong{% endif %}">
+                    <strong>C.</strong> {{ item.option_c }}
+                    {% if item.correct_answer == 'C' %}<span class="opt-tag tag-correct">Correct Answer</span>{% endif %}
+                    {% if item.selected_answer == 'C' and not item.is_correct %}<span class="opt-tag tag-selected">Your Choice</span>{% endif %}
+                </div>
+                <div class="review-opt {% if item.correct_answer == 'D' %}opt-correct{% elif item.selected_answer == 'D' and not item.is_correct %}opt-wrong{% endif %}">
+                    <strong>D.</strong> {{ item.option_d }}
+                    {% if item.correct_answer == 'D' %}<span class="opt-tag tag-correct">Correct Answer</span>{% endif %}
+                    {% if item.selected_answer == 'D' and not item.is_correct %}<span class="opt-tag tag-selected">Your Choice</span>{% endif %}
+                </div>
+            </div>
+
+            {% if item.explanation %}
+                <div class="review-explanation">
+                    <strong>💡 Concept Explanation:</strong>
+                    <p>{{ item.explanation }}</p>
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

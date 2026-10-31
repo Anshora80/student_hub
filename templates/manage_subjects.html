@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Subjects — AI Student Hub Admin{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('admin_dashboard') }}">&larr; Back to Admin Dashboard</a>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Subject Management</h1>
+        <p class="page-subtitle">Create and organize high-level academic subjects.</p>
+    </div>
+</div>
+
+<div class="admin-two-col">
+    <!-- Left: Add New Subject Form -->
+    <div class="content-card">
+        <div class="card-header">
+            <h3>Add New Subject</h3>
+        </div>
+        <form method="POST" action="{{ url_for('admin_subjects') }}" class="form-standard">
+            <div class="form-group">
+                <label for="name">Subject Name <span class="required">*</span></label>
+                <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Operating Systems" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Curriculum Description</label>
+                <textarea id="description" name="description" class="form-control" rows="3" placeholder="Brief overview of the subject..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Create Subject</button>
+        </form>
+    </div>
+
+    <!-- Right: Existing Subjects Table -->
+    <div class="content-card">
+        <div class="card-header">
+            <h3>Existing Subjects ({{ subjects|length }})</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Topics Count</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in subjects %}
+                        <tr>
+                            <td>
+                                <strong>{{ s.name }}</strong>
+                                <div class="text-muted text-sm">{{ s.description }}</div>
+                            </td>
+                            <td><span class="badge badge-info">{{ s.topic_count }} Topics</span></td>
+                            <td><span class="badge badge-success">Active</span></td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center">No subjects found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

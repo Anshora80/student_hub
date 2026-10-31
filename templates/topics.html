@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subject.name }} Topics — AI Student Hub{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('subjects') }}">&larr; Back to All Subjects</a>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ subject.name }}</h1>
+        <p class="page-subtitle">{{ subject.description }}</p>
+    </div>
+</div>
+
+<div class="topics-list-container">
+    {% for topic in topics %}
+        <div class="topic-row-card">
+            <div class="topic-info">
+                <h3>{{ topic.name }}</h3>
+                <p>{{ topic.description or 'Detailed core concept practice.' }}</p>
+                <div class="topic-meta">
+                    <span class="badge badge-info">{{ topic.question_count }} Questions Available</span>
+                </div>
+            </div>
+            <div class="topic-action-btn">
+                {% if topic.question_count > 0 %}
+                    <a href="{{ url_for('start_quiz', topic_id=topic.id) }}" class="btn btn-primary">
+                        Take Quiz &rarr;
+                    </a>
+                {% else %}
+                    <button class="btn btn-secondary" disabled>Questions Coming Soon</button>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>No active topics found under this subject yet.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

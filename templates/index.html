@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Home — AI Student Hub{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="hero-badge">🚀 BCA Major Project 2026</div>
+    <h1 class="hero-title">Learn Smarter with Intelligent Performance Analysis</h1>
+    <p class="hero-subtitle">
+        AI Student Hub goes beyond traditional online quizzes. It evaluates your topic-wise mastery, 
+        pinpoints weak knowledge areas, and delivers actionable, personalized learning recommendations.
+    </p>
+    <div class="hero-actions">
+        {% if session.get('user_id') %}
+            {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary btn-lg">Go to Admin Dashboard &rarr;</a>
+            {% else %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">Go to Student Dashboard &rarr;</a>
+            {% endif %}
+        {% else %}
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Get Started Free</a>
+            <a href="{{ url_for('login') }}" class="btn btn-secondary btn-lg">Student / Admin Login</a>
+        {% endif %}
+    </div>
+</section>
+
+<section class="features-grid">
+    <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <h3>Structured Topics</h3>
+        <p>Explore DSA, Python, DBMS, and more with organized, hierarchical topic-based modules.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Server-Side Quiz Engine</h3>
+        <p>Instant evaluation with zero client-side cheating and comprehensive answer explanations.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Performance Analytics</h3>
+        <p>Subject and topic-wise accuracy metrics that track your actual learning trajectory over time.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Smart Recommendations</h3>
+        <p>Rule-based algorithmic feedback highlighting priority practice topics and next study steps.</p>
+    </div>
+</section>
+{% endblock %}

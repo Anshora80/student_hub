@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Topics — AI Student Hub Admin{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('admin_dashboard') }}">&larr; Back to Admin Dashboard</a>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Topic Management</h1>
+        <p class="page-subtitle">Organize granular learning modules under parent academic subjects.</p>
+    </div>
+</div>
+
+<div class="admin-two-col">
+    <!-- Left: Add New Topic Form -->
+    <div class="content-card">
+        <div class="card-header">
+            <h3>Add New Topic</h3>
+        </div>
+        <form method="POST" action="{{ url_for('admin_topics') }}" class="form-standard">
+            <div class="form-group">
+                <label for="subject_id">Parent Subject <span class="required">*</span></label>
+                <select id="subject_id" name="subject_id" class="form-control" required>
+                    <option value="">-- Select Subject --</option>
+                    {% for s in subjects %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="name">Topic Name <span class="required">*</span></label>
+                <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Object-Oriented Programming" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Topic Description</label>
+                <textarea id="description" name="description" class="form-control" rows="3" placeholder="Overview of key learning outcomes..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Create Topic</button>
+        </form>
+    </div>
+
+    <!-- Right: Existing Topics Table -->
+    <div class="content-card">
+        <div class="card-header">
+            <h3>Existing Topics ({{ topics|length }})</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Topic</th>
+                        <th>Questions</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in topics %}
+                        <tr>
+                            <td><span class="badge badge-primary">{{ t.subject_name }}</span></td>
+                            <td>
+                                <strong>{{ t.name }}</strong>
+                                <div class="text-muted text-sm">{{ t.description }}</div>
+                            </td>
+                            <td><span class="badge badge-info">{{ t.question_count }} Qs</span></td>
+                            <td><span class="badge badge-success">Active</span></td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center">No topics created yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

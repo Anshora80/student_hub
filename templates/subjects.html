@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Explore Subjects — AI Student Hub{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Available Subjects</h1>
+        <p class="page-subtitle">Select a subject to explore its syllabus topics and practice quizzes.</p>
+    </div>
+</div>
+
+<div class="cards-grid">
+    {% for subject in subjects %}
+        <div class="subject-card">
+            <div class="card-top">
+                <span class="badge badge-primary">{{ subject.topic_count }} Topics</span>
+            </div>
+            <h2 class="subject-title">{{ subject.name }}</h2>
+            <p class="subject-desc">{{ subject.description or 'Curated academic curriculum designed for computer science.' }}</p>
+            <div class="subject-footer">
+                <a href="{{ url_for('view_topics', subject_id=subject.id) }}" class="btn btn-primary btn-block">
+                    Explore Topics &rarr;
+                </a>
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>No subjects are currently active in the database. Please contact your administrator.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

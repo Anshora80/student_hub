@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard — AI Student Hub{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title">Administrator Control Center 🛡️</h1>
+        <p class="page-subtitle">Manage curriculum, questions, examine student assessments, and track platform metrics.</p>
+    </div>
+</div>
+
+<!-- System Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Registered Students</div>
+        <div class="stat-value text-primary">{{ stats.total_students }}</div>
+        <div class="stat-desc">Active student accounts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Curriculum Subjects</div>
+        <div class="stat-value text-primary">{{ stats.total_subjects }}</div>
+        <div class="stat-desc">Active academic courses</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Syllabus Topics</div>
+        <div class="stat-value text-primary">{{ stats.total_topics }}</div>
+        <div class="stat-desc">Modules across all subjects</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Question Bank</div>
+        <div class="stat-value text-success">{{ stats.total_questions }}</div>
+        <div class="stat-desc">Active MCQ questions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Total Quiz Attempts</div>
+        <div class="stat-value text-warning">{{ stats.total_attempts }}</div>
+        <div class="stat-desc">Student evaluations completed</div>
+    </div>
+</div>
+
+<!-- Management Quick Navigation Cards -->
+<div class="admin-modules-grid">
+    <div class="admin-card">
+        <div class="admin-card-icon">📚</div>
+        <h3>Manage Subjects</h3>
+        <p>Add new academic subjects or update subject descriptions.</p>
+        <a href="{{ url_for('admin_subjects') }}" class="btn btn-outline btn-block">Manage Subjects &rarr;</a>
+    </div>
+
+    <div class="admin-card">
+        <div class="admin-card-icon">📑</div>
+        <h3>Manage Topics</h3>
+        <p>Add new curriculum topics under active academic subjects.</p>
+        <a href="{{ url_for('admin_topics') }}" class="btn btn-outline btn-block">Manage Topics &rarr;</a>
+    </div>
+
+    <div class="admin-card">
+        <div class="admin-card-icon">❓</div>
+        <h3>Question Bank</h3>
+        <p>Create new multiple-choice questions with 4 options and detailed explanations.</p>
+        <a href="{{ url_for('admin_questions') }}" class="btn btn-primary btn-block">Add / Edit Questions &rarr;</a>
+    </div>
+
+    <div class="admin-card">
+        <div class="admin-card-icon">📊</div>
+        <h3>Student Quiz Records</h3>
+        <p>Audit individual student quiz scores, percentages, and performance logs.</p>
+        <a href="{{ url_for('admin_student_results') }}" class="btn btn-outline btn-block">View Student Results &rarr;</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — AI Student Hub{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title">Welcome back, {{ user.name }}! 👋</h1>
+        <p class="page-subtitle">{{ user.course }} — Semester {{ user.semester }} • Learning & Performance Overview</p>
+    </div>
+    <div class="header-action">
+        <a href="{{ url_for('subjects') }}" class="btn btn-primary">Browse Subjects & Take Quiz &rarr;</a>
+    </div>
+</div>
+
+<!-- Recommended Next Action Banner -->
+<div class="recommendation-banner">
+    <div class="rec-icon">🎯</div>
+    <div class="rec-content">
+        <h4>Recommended Next Step</h4>
+        <p>{{ recommendations.recommended_next_action }}</p>
+    </div>
+    {% if recommendations.focus_topic %}
+        <a href="{{ url_for('start_quiz', topic_id=recommendations.focus_topic.topic_id) }}" class="btn btn-primary btn-sm">
+            Attempt Quiz &rarr;
+        </a>
+    {% endif %}
+</div>
+
+<!-- Key Performance Metrics Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Quizzes Attempted</div>
+        <div class="stat-value">{{ overall_stats.total_attempts }}</div>
+        <div class="stat-desc">Completed evaluations</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Average Score</div>
+        <div class="stat-value {% if overall_stats.average_percentage >= 80 %}text-success{% elif overall_stats.average_percentage >= 60 %}text-warning{% else %}text-primary{% endif %}">
+            {{ overall_stats.average_percentage }}%
+        </div>
+        <div class="stat-desc">Across all attempted topics</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Questions Mastered</div>
+        <div class="stat-value text-success">{{ overall_stats.total_correct }}</div>
+        <div class="stat-desc">Out of {{ overall_stats.total_questions }} answered</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Priority Focus Areas</div>
+        <div class="stat-value text-danger">{{ recommendations.priority_topics|length }}</div>
+        <div class="stat-desc">Topics below 60% accuracy</div>
+    </div>
+</div>
+
+<div class="dashboard-columns">
+    <!-- Left Column: Priority & Practice Topics -->
+    <div class="dashboard-col">
+        <div class="content-card">
+            <div class="card-header">
+                <h3>Priority Learning Areas (< 60%)</h3>
+                <span class="badge badge-danger">{{ recommendations.priority_topics|length }} Areas</span>
+            </div>
+            {% if recommendations.priority_topics %}
+                <div class="topic-list">
+                    {% for t in recommendations.priority_topics %}
+                        <div class="topic-item">
+                            <div>
+                                <div class="topic-name">{{ t.topic_name }}</div>
+                                <div class="topic-subject">{{ t.subject_name }} • {{ t.attempts_count }} attempts</div>
+                            </div>
+                            <div class="topic-action">
+                                <span class="score-pill badge-danger">{{ t.avg_percentage }}%</span>
+                                <a href="{{ url_for('start_quiz', topic_id=t.topic_id) }}" class="btn btn-outline btn-sm">Re-take</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>🎉 Excellent! You have no topics currently flagged below 60%.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="content-card">
+            <div class="card-header">
+                <h3>Topics Needing Revision (60% - 79%)</h3>
+                <span class="badge badge-warning">{{ recommendations.practice_topics|length }} Areas</span>
+            </div>
+            {% if recommendations.practice_topics %}
+                <div class="topic-list">
+                    {% for t in recommendations.practice_topics %}
+                        <div class="topic-item">
+                            <div>
+                                <div class="topic-name">{{ t.topic_name }}</div>
+                                <div class="topic-subject">{{ t.subject_name }} • {{ t.attempts_count }} attempts</div>
+                            </div>
+                            <div class="topic-action">
+                                <span class="score-pill badge-warning">{{ t.avg_percentage }}%</span>
+                                <a href="{{ url_for('start_quiz', topic_id=t.topic_id) }}" class="btn btn-outline btn-sm">Practice</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>No topics currently in this intermediate threshold.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Column: Subject Breakdown & Recent Attempts -->
+    <div class="dashboard-col">
+        <div class="content-card">
+            <div class="card-header">
+                <h3>Subject-Wise Performance</h3>
+                <a href="{{ url_for('performance_view') }}" class="card-link">View Full Analysis &rarr;</a>
+            </div>
+            {% if subject_stats %}
+                <div class="subject-progress-list">
+                    {% for s in subject_stats %}
+                        <div class="subject-progress-item">
+                            <div class="sp-header">
+                                <span class="sp-name">{{ s.subject_name }}</span>
+                                <span class="sp-score">{{ s.avg_percentage }}%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill {% if s.avg_percentage >= 80 %}bg-success{% elif s.avg_percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ s.avg_percentage }}%;"></div>
+                            </div>
+                            <div class="sp-meta">{{ s.attempts_count }} attempt(s)</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>No subject performance data yet. Start by taking your first topic quiz!</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="content-card">
+            <div class="card-header">
+                <h3>Recent Quiz History</h3>
+                <a href="{{ url_for('history_view') }}" class="card-link">All History &rarr;</a>
+            </div>
+            {% if recent_attempts %}
+                <div class="recent-list">
+                    {% for a in recent_attempts %}
+                        <div class="recent-item">
+                            <div>
+                                <div class="recent-title">{{ a.topic_name }}</div>
+                                <div class="recent-meta">{{ a.subject_name }} • {{ a.attempted_at[:16] }}</div>
+                            </div>
+                            <div class="recent-right">
+                                <span class="recent-score {% if a.percentage >= 80 %}text-success{% elif a.percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ a.percentage }}% ({{ a.score }}/{{ a.total_questions }})
+                                </span>
+                                <a href="{{ url_for('view_result', attempt_id=a.id) }}" class="btn btn-outline btn-sm">Review</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>No quiz attempts found. Choose a topic and start practicing today.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
