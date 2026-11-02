@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Results: {{ attempt.document_title }} (Batch {{ attempt.batch_number }}) — AI Student Hub{% endblock %}
+
+{% block content %}
+<div class="result-summary-card">
+    <div class="result-badge">Evaluation & Diagnostics Complete</div>
+    <h2>Syllabus Performance Report</h2>
+    <p class="result-subtitle">{{ attempt.document_title }} &bull; <strong>Batch {{ attempt.batch_number }} Assessment</strong></p>
+    <p class="result-date">Attempted on: {{ attempt.attempted_at[:16] }}</p>
+
+    <div class="score-circular-metric">
+        <div class="score-large {% if attempt.percentage >= 80 %}text-success{% elif attempt.percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">
+            {{ attempt.percentage }}%
+        </div>
+        <div class="score-label">Score: {{ attempt.score }} / {{ attempt.total_questions }}</div>
+    </div>
+
+    <!-- AI Weak Area & Learning Pattern Guidance -->
+    {% if attempt.recommendations_text %}
+        <div class="ai-coach-card" style="margin-top: 1.5rem;">
+            <div class="ai-coach-header">
+                <div class="ai-coach-title">
+                    <span class="ai-icon">🧠</span>
+                    <h3>AI Weak Area & Learning Pattern Diagnostics</h3>
+                </div>
+                <span class="badge badge-info">Pedagogical Analysis</span>
+            </div>
+            <div class="ai-coach-body">
+                <div class="ai-markdown-content">
+                    {{ attempt.recommendations_text | replace('\n', '<br>') | safe }}
+                </div>
+                <div class="ai-disclaimer">
+                    ℹ️ <em>Personalized diagnostic advice grounded in your mistakes on this uploaded syllabus.</em>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="result-actions mt-4">
+        <a href="{{ url_for('next_document_quiz_batch', doc_id=attempt.document_id) }}" class="btn btn-primary btn-lg" onclick="return confirm('Generate Next 10 brand new questions from this PDF without repeats?');">
+            ⚡ Take Next 10 Questions &rarr;
+        </a>
+        <a href="{{ url_for('document_quiz', doc_id=attempt.document_id, batch=attempt.batch_number) }}" class="btn btn-secondary">
+            Retake This Batch
+        </a>
+        <a href="{{ url_for('document_detail', doc_id=attempt.document_id) }}" class="btn btn-outline">
+            Back to Document Hub
+        </a>
+    </div>
+</div>
+
+<div class="section-title-wrapper">
+    <h3>Question-by-Question Review</h3>
+    <p>Compare your answers with the correct syllabus keys and official concept explanations.</p>
+</div>
+
+<div class="review-questions-list">
+    {% for item in answers %}
+        <div class="review-card {% if item.is_correct %}review-correct{% else %}review-incorrect{% endif %}">
+            <div class="review-header">
+                <span class="review-qnum">Question {{ loop.index }}</span>
+                {% if item.is_correct %}
+                    <span class="badge badge-success">✓ Correct (+1 Mark)</span>
+                {% else %}
+                    <span class="badge badge-danger">✗ Incorrect (0 Marks)</span>
+                {% endif %}
+            </div>
+
+            <div class="review-question-text">
+                {{ item.question_text }}
+            </div>
+
+            <div class="review-options">
+                <div class="review-opt {% if item.correct_answer == 'A' %}opt-correct{% elif item.selected_answer == 'A' and not item.is_correct %}opt-wrong{% endif %}">
+                    <strong>A.</strong> {{ item.option_a }}
+                    {% if item.correct_answer == 'A' %}<span class="opt-tag tag-correct">Correct Answer</span>{% endif %}
+                    {% if item.selected_answer == 'A' and not item.is_correct %}<span class="opt-tag tag-selected">Your Choice</span>{% endif %}
+                </div>
+                <div class="review-opt {% if item.correct_answer == 'B' %}opt-correct{% elif item.selected_answer == 'B' and not item.is_correct %}opt-wrong{% endif %}">
+                    <strong>B.</strong> {{ item.option_b }}
+                    {% if item.correct_answer == 'B' %}<span class="opt-tag tag-correct">Correct Answer</span>{% endif %}
+                    {% if item.selected_answer == 'B' and not item.is_correct %}<span class="opt-tag tag-selected">Your Choice</span>{% endif %}
+                </div>
+                <div class="review-opt {% if item.correct_answer == 'C' %}opt-correct{% elif item.selected_answer == 'C' and not item.is_correct %}opt-wrong{% endif %}">
+                    <strong>C.</strong> {{ item.option_c }}
+                    {% if item.correct_answer == 'C' %}<span class="opt-tag tag-correct">Correct Answer</span>{% endif %}
+                    {% if item.selected_answer == 'C' and not item.is_correct %}<span class="opt-tag tag-selected">Your Choice</span>{% endif %}
+                </div>
+                <div class="review-opt {% if item.correct_answer == 'D' %}opt-correct{% elif item.selected_answer == 'D' and not item.is_correct %}opt-wrong{% endif %}">
+                    <strong>D.</strong> {{ item.option_d }}
+                    {% if item.correct_answer == 'D' %}<span class="opt-tag tag-correct">Correct Answer</span>{% endif %}
+                    {% if item.selected_answer == 'D' and not item.is_correct %}<span class="opt-tag tag-selected">Your Choice</span>{% endif %}
+                </div>
+            </div>
+
+            {% if item.explanation %}
+                <div class="review-explanation">
+                    <strong>💡 Syllabus Learning Note:</strong>
+                    <p>{{ item.explanation }}</p>
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

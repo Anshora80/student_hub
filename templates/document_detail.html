@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}{{ doc.title }} — Study Hub{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('my_documents') }}">&larr; Back to My Study PDFs</a>
+</div>
+
+<div class="doc-hub-header">
+    <div class="doc-hub-info">
+        <span class="badge badge-primary">Syllabus RAG Hub</span>
+        <h1 class="page-title" style="margin-top: 0.35rem;">{{ doc.title }}</h1>
+        <p class="page-subtitle">
+            📄 {{ doc.original_filename }} &bull; {{ doc.total_pages }} Pages &bull; {{ doc.total_chunks }} Chunks Indexed &bull; Uploaded on {{ doc.created_at[:10] }}
+        </p>
+    </div>
+
+    <div class="doc-hub-quick-actions">
+        <a href="{{ url_for('document_quiz', doc_id=doc.id, batch=1) }}" class="btn btn-primary btn-lg">
+            🎯 Start Top 10 Quiz &rarr;
+        </a>
+        <a href="{{ url_for('next_document_quiz_batch', doc_id=doc.id) }}" class="btn btn-secondary btn-lg" onclick="return confirm('Generate 10 brand new questions from this document without repeats?');">
+            ⚡ Generate Next 10 Questions
+        </a>
+    </div>
+</div>
+
+<div class="dashboard-columns mt-4">
+    <!-- Left Column: Chat with Document / Ask PDF -->
+    <div class="dashboard-col">
+        <div class="content-card">
+            <div class="card-header">
+                <h3>💬 Ask Your Document (Precise Q&A)</h3>
+                <span class="badge badge-info">Page Cited RAG</span>
+            </div>
+            <p class="text-muted text-sm mb-3">
+                Ask any question about definitions, concepts, or formulas from <strong>{{ doc.title }}</strong>. The AI will cite exact page numbers from your PDF.
+            </p>
+
+            <form id="docChatForm" onsubmit="askDocument(event)" class="form-standard">
+                <div class="form-group">
+                    <input type="text" id="chatQuery" class="form-control" placeholder="e.g. What are the key principles or definitions discussed?" required>
+                </div>
+
+                <div class="quick-prompts-wrapper mb-3">
+                    <span class="qp-label">💡 Suggested Questions:</span>
+                    <div class="chips-container">
+                        <button type="button" class="prompt-chip" onclick="fillDocQuery('Summarize the most important learning objectives from this document.')">Summary & Objectives</button>
+                        <button type="button" class="prompt-chip" onclick="fillDocQuery('What are the key definitions and formulas in this syllabus?')">Key Definitions</button>
+                        <button type="button" class="prompt-chip" onclick="fillDocQuery('What are the most probable high-scoring exam questions?')">Probable Exam Qs</button>
+                    </div>
+                </div>
+
+                <button type="submit" id="askBtn" class="btn btn-primary btn-block">Ask AI Tutor from PDF &rarr;</button>
+            </form>
+
+            <!-- Chat Response Box -->
+            <div id="chatResponseBox" class="ai-response-card mt-3" style="display: none;">
+                <div class="ai-response-header">
+                    <span id="responseProvider" class="badge badge-info">AI Document Grounded</span>
+                    <span class="ai-live-tag">🟢 Page Verified</span>
+                </div>
+                <div id="responseQuestion" class="ai-response-question" style="font-weight: 600;"></div>
+                <div id="responseAnswer" class="ai-response-content"></div>
+                <div id="responseCitations" class="mt-3 pt-2" style="border-top: 1px dashed var(--gray-border); font-size: 0.82rem; color: var(--gray-medium);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Quiz Attempts & Questions Overview -->
+    <div class="dashboard-col">
+        <div class="content-card">
+            <div class="card-header">
+                <h3>📊 Dynamic Quiz Attempts ({{ attempts|length }})</h3>
+                <span class="badge badge-primary">{{ total_generated_questions }} Total Questions Available</span>
+            </div>
+
+            {% if attempts %}
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Batch</th>
+                                <th>Score</th>
+                                <th>Percentage</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in attempts %}
+                                <tr>
+                                    <td>{{ a.attempted_at[:16] }}</td>
+                                    <td><span class="badge badge-neutral">Batch {{ a.batch_number }}</span></td>
+                                    <td><strong>{{ a.score }} / {{ a.total_questions }}</strong></td>
+                                    <td>
+                                        <strong class="{% if a.percentage >= 80 %}text-success{% elif a.percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">
+                                            {{ a.percentage }}%
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('view_document_quiz_result', attempt_id=a.id) }}" class="btn btn-outline btn-sm">
+                                            View Report &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
+                    <p>No quiz attempts for this document yet.</p>
+                    <p class="text-muted text-sm">Click "Start Top 10 Quiz" to take your first test on this PDF!</p>
+                    <a href="{{ url_for('document_quiz', doc_id=doc.id, batch=1) }}" class="btn btn-primary btn-sm mt-2">
+                        Start Batch 1 Quiz &rarr;
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function fillDocQuery(q) {
+    document.getElementById('chatQuery').value = q;
+    document.getElementById('chatQuery').focus();
+}
+
+async function askDocument(e) {
+    e.preventDefault();
+    const queryInput = document.getElementById('chatQuery');
+    const askBtn = document.getElementById('askBtn');
+    const responseBox = document.getElementById('chatResponseBox');
+    const questionEl = document.getElementById('responseQuestion');
+    const answerEl = document.getElementById('responseAnswer');
+    const citationsEl = document.getElementById('responseCitations');
+    const providerEl = document.getElementById('responseProvider');
+
+    const query = queryInput.value.trim();
+    if (!query) return;
+
+    askBtn.disabled = true;
+    askBtn.innerText = "Analyzing PDF excerpts...";
+
+    const formData = new FormData();
+    formData.append('query', query);
+
+    try {
+        const res = await fetch("{{ url_for('document_chat', doc_id=doc.id) }}", {
+            method: "POST",
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.error) {
+            alert(data.error);
+        } else {
+            responseBox.style.display = "block";
+            questionEl.innerText = "Q: " + query;
+            answerEl.innerHTML = data.answer.replace(/\n/g, '<br>');
+            providerEl.innerText = data.provider || "AI Document Tutor";
+
+            if (data.sources && data.sources.length > 0) {
+                let citeText = "<strong>Cited Document Pages:</strong> ";
+                const pages = [...new Set(data.sources.map(s => s.page))];
+                citeText += pages.map(p => `<span class="badge badge-info" style="margin-right: 4px;">Page ${p}</span>`).join(" ");
+                citationsEl.innerHTML = citeText;
+            } else {
+                citationsEl.innerHTML = "";
+            }
+        }
+    } catch (err) {
+        alert("Error communicating with AI assistant: " + err.message);
+    } finally {
+        askBtn.disabled = false;
+        askBtn.innerText = "Ask AI Tutor from PDF \u2192";
+    }
+}
+</script>
+{% endblock %}

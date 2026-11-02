@@ -255,3 +255,160 @@ def get_user_quiz_history(user_id, limit=20):
     """, (user_id, limit)).fetchall()
     conn.close()
     return history
+
+
+# ==========================================
+# 5. User Document & PDF RAG Functions
+# ==========================================
+
+def create_user_document(user_id, title, original_filename, stored_filename, file_size, total_pages=1, total_chunks=0):
+    """Inserts a new document record belonging to user_id."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO user_documents (user_id, title, original_filename, stored_filename, file_size, total_pages, total_chunks)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, title.strip(), original_filename, stored_filename, file_size, total_pages, total_chunks))
+    doc_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return doc_id
+
+
+def store_document_chunks(document_id, chunks_data):
+    """
+    Saves document chunks and optional vector embeddings.
+    chunks_data: list of dicts [{'chunk_index': i, 'page_number': p, 'chunk_text': t, 'embedding_json': j}, ...]
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    for c in chunks_data:
+        cursor.execute("""
+            INSERT INTO document_chunks (document_id, chunk_index, page_number, chunk_text, embedding_json)
+            VALUES (?, ?, ?, ?, ?)
+        """, (document_id, c['chunk_index'], c['page_number'], c['chunk_text'], c.get('embedding_json')))
+    # Update total_chunks count on user_documents
+    cursor.execute("""
+        UPDATE user_documents SET total_chunks = ? WHERE id = ?
+    """, (len(chunks_data), document_id))
+    conn.commit()
+    conn.close()
+
+
+def get_user_documents(user_id):
+    """Retrieves all documents uploaded by a specific student."""
+    conn = get_db_connection()
+    docs = conn.execute("""
+        SELECT ud.*, 
+               (SELECT COUNT(*) FROM document_quizzes dq WHERE dq.document_id = ud.id) as question_count,
+               (SELECT COUNT(*) FROM document_quiz_attempts dqa WHERE dqa.document_id = ud.id) as attempt_count,
+               (SELECT MAX(dqa.percentage) FROM document_quiz_attempts dqa WHERE dqa.document_id = ud.id) as best_score
+        FROM user_documents ud
+        WHERE ud.user_id = ?
+        ORDER BY ud.created_at DESC
+    """, (user_id,)).fetchall()
+    conn.close()
+    return docs
+
+
+def get_document_by_id(doc_id, user_id=None):
+    """Retrieves a single document with optional ownership verification."""
+    conn = get_db_connection()
+    query = "SELECT * FROM user_documents WHERE id = ?"
+    params = [doc_id]
+    if user_id:
+        query += " AND user_id = ?"
+        params.append(user_id)
+    doc = conn.execute(query, params).fetchone()
+    conn.close()
+    return doc
+
+
+def delete_user_document(doc_id, user_id):
+    """Securely deletes a document and all related chunks/quizzes if owned by user_id."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    doc = conn.execute("SELECT * FROM user_documents WHERE id = ? AND user_id = ?", (doc_id, user_id)).fetchone()
+    if not doc:
+        conn.close()
+        return False, "Document not found or access denied."
+
+    cursor.execute("DELETE FROM user_documents WHERE id = ? AND user_id = ?", (doc_id, user_id))
+    conn.commit()
+    conn.close()
+    return True, doc['stored_filename']
+
+
+def get_document_quizzes_for_attempt(document_id, user_id, batch_number=1):
+    """Retrieves quiz questions for a document batch."""
+    conn = get_db_connection()
+    questions = conn.execute("""
+        SELECT id, document_id, question_text, option_a, option_b, option_c, option_d, batch_number
+        FROM document_quizzes
+        WHERE document_id = ? AND user_id = ? AND batch_number = ?
+        ORDER BY id ASC
+    """, (document_id, user_id, batch_number)).fetchall()
+    conn.close()
+    return questions
+
+
+def save_document_quiz_attempt(doc_id, user_id, batch_number, score, total_questions, percentage, weak_areas_json, recommendations_text, answers_list):
+    """Saves completed PDF quiz attempt and individual answers in an atomic transaction."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO document_quiz_attempts (
+                document_id, user_id, batch_number, score, total_questions, percentage, weak_areas_json, recommendations_text
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (doc_id, user_id, batch_number, score, total_questions, percentage, weak_areas_json, recommendations_text))
+        attempt_id = cursor.lastrowid
+
+        for a in answers_list:
+            cursor.execute("""
+                INSERT INTO document_attempt_answers (attempt_id, quiz_question_id, selected_answer, is_correct)
+                VALUES (?, ?, ?, ?)
+            """, (attempt_id, a['question_id'], a.get('selected_answer'), a['is_correct']))
+
+        conn.commit()
+        return attempt_id
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+
+def get_document_quiz_attempt(attempt_id, user_id=None):
+    """Fetches attempt summary for a document quiz with user authorization check."""
+    conn = get_db_connection()
+    query = """
+        SELECT dqa.*, ud.title as document_title, ud.original_filename, u.name as student_name
+        FROM document_quiz_attempts dqa
+        JOIN user_documents ud ON dqa.document_id = ud.id
+        JOIN users u ON dqa.user_id = u.id
+        WHERE dqa.id = ?
+    """
+    params = [attempt_id]
+    if user_id:
+        query += " AND dqa.user_id = ?"
+        params.append(user_id)
+    attempt = conn.execute(query, params).fetchone()
+    conn.close()
+    return attempt
+
+
+def get_document_attempt_details(attempt_id):
+    """Fetches answer breakdown with questions and explanations for document quiz attempt."""
+    conn = get_db_connection()
+    details = conn.execute("""
+        SELECT daa.*, dq.question_text, dq.option_a, dq.option_b, dq.option_c, dq.option_d,
+               dq.correct_answer, dq.explanation
+        FROM document_attempt_answers daa
+        JOIN document_quizzes dq ON daa.quiz_question_id = dq.id
+        WHERE daa.attempt_id = ?
+        ORDER BY daa.id ASC
+    """, (attempt_id,)).fetchall()
+    conn.close()
+    return details
+

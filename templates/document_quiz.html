@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz: {{ doc.title }} (Batch {{ batch_number }}) — AI Student Hub{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('document_detail', doc_id=doc.id) }}">&larr; Back to {{ doc.title }} Hub</a>
+</div>
+
+<div class="quiz-header-card">
+    <div class="quiz-title-meta">
+        <span class="badge badge-primary">{{ doc.title }}</span>
+        <span class="badge badge-info">Batch {{ batch_number }}</span>
+        <h1>Dynamic PDF Assessment</h1>
+        <p>Top high-yield conceptual questions generated directly from your uploaded syllabus material.</p>
+    </div>
+    <div class="quiz-instructions">
+        <span>📝 Total Questions: <strong>{{ questions|length }}</strong></span>
+        <span>⏱️ Untimed Practice Mode</span>
+        <span>🔒 Server-Evaluated Grading</span>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('submit_document_quiz', doc_id=doc.id) }}" class="quiz-form" id="docQuizForm">
+    <input type="hidden" name="batch_number" value="{{ batch_number }}">
+
+    {% for q in questions %}
+        <div class="question-card" id="q-block-{{ q.id }}">
+            <div class="question-header">
+                <span class="question-number">Question {{ loop.index }} of {{ questions|length }}</span>
+            </div>
+            <div class="question-text">
+                {{ q.question_text }}
+            </div>
+            <div class="options-container">
+                <label class="option-label">
+                    <input type="radio" name="question_{{ q.id }}" value="A">
+                    <span class="option-custom"><strong>A.</strong> {{ q.option_a }}</span>
+                </label>
+                <label class="option-label">
+                    <input type="radio" name="question_{{ q.id }}" value="B">
+                    <span class="option-custom"><strong>B.</strong> {{ q.option_b }}</span>
+                </label>
+                <label class="option-label">
+                    <input type="radio" name="question_{{ q.id }}" value="C">
+                    <span class="option-custom"><strong>C.</strong> {{ q.option_c }}</span>
+                </label>
+                <label class="option-label">
+                    <input type="radio" name="question_{{ q.id }}" value="D">
+                    <span class="option-custom"><strong>D.</strong> {{ q.option_d }}</span>
+                </label>
+            </div>
+        </div>
+    {% endfor %}
+
+    <div class="quiz-submit-box">
+        <button type="submit" class="btn btn-primary btn-lg" onclick="return confirm('Submit answers for automatic grading and weak area analysis?');">
+            Submit Assessment for Evaluation &rarr;
+        </button>
+    </div>
+</form>
+{% endblock %}

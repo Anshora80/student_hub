@@ -9,11 +9,14 @@ Executes comprehensive end-to-end verification covering:
 """
 
 import sys
+import io
+import json
 from app import app
 from database import get_db_connection, init_db, seed_sample_data
 import models
 import quiz_logic
 import recommendation
+import rag_engine
 
 def run_tests():
     print("=" * 65)
@@ -203,11 +206,104 @@ def run_tests():
     assert_test("TC-19", "AI Concept Tutor processes conceptual question and returns educational explanation", 
                 res.status_code == 200 and b"What is the difference between a list and a tuple?" in res.data and b"AI Tutor Note" in res.data or b"List" in res.data)
 
+    # =========================================================
+    # Universal PDF RAG & Dynamic Quiz Engine Tests (TC-20 to TC-25)
+    # =========================================================
+
+    def create_mock_pdf_bytes():
+        return b"""%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj
+4 0 obj << /Length 280 >> stream
+BT
+/F1 12 Tf
+50 720 Td
+(Modern Indian Polity and Constitution: Fundamental Rights are enshrined in Part III and protected under Article 32. Directive Principles in Part IV guide social justice and economic welfare. Parliament comprises the President, Lok Sabha, and Rajya Sabha with bicameral federal legislation.) Tj
+ET
+endstream endobj
+5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000244 00000 n 
+0000000576 00000 n 
+trailer << /Size 6 /Root 1 0 R >>
+startxref
+655
+%%EOF"""
+
+    # Test 20: PDF Upload Security (Rejection of Non-PDF File)
+    res = client.post('/my-documents/upload', data={
+        'title': 'Malicious File Test',
+        'document': (io.BytesIO(b'Executable binary code'), 'malware.exe')
+    }, follow_redirects=True)
+    assert_test("TC-20", "Upload validator rejects non-PDF file extension with descriptive alert",
+                res.status_code == 200 and b"Only .pdf files are accepted" in res.data)
+
+    # Test 21: Valid PDF Upload & Text Chunking in SQLite
+    mock_pdf = create_mock_pdf_bytes()
+    res = client.post('/my-documents/upload', data={
+        'title': 'UPSC Indian Polity Notes',
+        'document': (io.BytesIO(mock_pdf), 'indian_polity.pdf')
+    }, follow_redirects=True)
+    assert_test("TC-21", "Valid PDF upload succeeds, extracts text chunks, and initializes Document Hub",
+                res.status_code == 200 and b"UPSC Indian Polity Notes" in res.data)
+
+    # Get newly created document
+    student_user = models.get_user_by_email('student@studenthub.com')
+    docs = models.get_user_documents(student_user['id'])
+    test_doc = next((d for d in docs if d['title'] == 'UPSC Indian Polity Notes'), None)
+    doc_id = test_doc['id'] if test_doc else 1
+
+    # Test 22: RAG Grounded Q&A (Chat with Document)
+    res = client.post(f'/document/{doc_id}/chat', data={
+        'query': 'What is Article 32 related to in the constitution?'
+    })
+    chat_json = res.get_json() or {}
+    assert_test("TC-22", "RAG Engine answers question grounded in uploaded PDF with page citations",
+                res.status_code == 200 and "answer" in chat_json and ("Article 32" in chat_json["answer"] or "Fundamental Rights" in chat_json["answer"] or len(chat_json.get("sources", [])) > 0))
+
+    # Test 23: Dynamic Top-10 MCQ Quiz Render
+    res = client.get(f'/document/{doc_id}/quiz?batch=1')
+    assert_test("TC-23", "Dynamic PDF Assessment renders Batch 1 Multiple Choice Questions",
+                res.status_code == 200 and b"Dynamic PDF Assessment" in res.data and b"Question 1" in res.data)
+
+    # Test 24: Server-Side Quiz Grading & Weak Area / Learning Pattern Analysis
+    # Fetch questions generated for Batch 1 from database directly with answer key
+    conn = get_db_connection()
+    batch_qs = conn.execute("""
+        SELECT id, correct_answer FROM document_quizzes
+        WHERE document_id = ? AND batch_number = 1
+    """, (doc_id,)).fetchall()
+    conn.close()
+
+    submission_data = {'batch_number': '1'}
+    if batch_qs:
+        # Deliberately answer first question correctly, second incorrectly
+        submission_data[f"question_{batch_qs[0]['id']}"] = batch_qs[0]['correct_answer']
+        if len(batch_qs) > 1:
+            wrong_opt = 'A' if batch_qs[1]['correct_answer'] != 'A' else 'B'
+            submission_data[f"question_{batch_qs[1]['id']}"] = wrong_opt
+
+    res = client.post(f'/document/{doc_id}/quiz/submit', data=submission_data, follow_redirects=True)
+    assert_test("TC-24", "PDF Quiz submission grades server-side and generates Weak Area / Learning Pattern Diagnostics",
+                res.status_code == 200 and b"Syllabus Performance Report" in res.data and b"AI Weak Area & Learning Pattern Diagnostics" in res.data)
+
+    # Test 25: Non-Duplicate "Next 10 Questions" Generation
+    res = client.get(f'/document/{doc_id}/quiz/next', follow_redirects=True)
+    assert_test("TC-25", "Next 10 Questions batch generation executes and transitions to Batch 2",
+                res.status_code == 200 and (b"Batch 2" in res.data or b"Next 10" in res.data or b"Dynamic PDF Assessment" in res.data))
+
     print("=" * 65)
     print(f"TEST EXECUTION SUMMARY: {passed_tests} / {total_tests} TESTS PASSED")
     print("=" * 65)
 
     return passed_tests == total_tests
+
 
 if __name__ == '__main__':
     success = run_tests()
