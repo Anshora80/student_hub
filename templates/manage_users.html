@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}User Directory — AI Student Hub Admin{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('admin_dashboard') }}">&larr; Back to Admin Dashboard</a>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Registered Users Directory 👥</h1>
+        <p class="page-subtitle">Complete list of registered students and administrators across the platform.</p>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="card-header">
+        <h3>All Registered Accounts ({{ users|length }})</h3>
+    </div>
+
+    {% if users %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Student / User</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Course / Sem</th>
+                        <th>Quizzes Taken</th>
+                        <th>PDFs Uploaded</th>
+                        <th>Joined Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                        <tr>
+                            <td>#{{ u.id }}</td>
+                            <td><strong>{{ u.name }}</strong></td>
+                            <td>{{ u.email }}</td>
+                            <td>
+                                {% if u.role == 'admin' %}
+                                    <span class="badge badge-primary">Admin</span>
+                                {% else %}
+                                    <span class="badge badge-success">Student</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.role == 'admin' %}
+                                    <span class="text-muted">Faculty</span>
+                                {% else %}
+                                    {{ u.course }} &bull; Sem {{ u.semester }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-neutral">{{ u.total_quizzes }}</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-info">{{ u.total_docs }}</span>
+                            </td>
+                            <td class="text-muted text-sm">{{ u.created_at[:16] }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>No registered users found in database.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

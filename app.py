@@ -553,6 +553,22 @@ def admin_student_results():
     return render_template('student_results.html', attempts=attempts)
 
 
+@app.route('/admin/users')
+@admin_required
+def admin_users():
+    """Directory of all registered students and administrators."""
+    conn = get_db_connection()
+    users_list = conn.execute("""
+        SELECT u.*, 
+               (SELECT COUNT(*) FROM quiz_attempts qa WHERE qa.user_id = u.id) as total_quizzes,
+               (SELECT COUNT(*) FROM user_documents ud WHERE ud.user_id = u.id) as total_docs
+        FROM users u
+        ORDER BY u.created_at DESC
+    """).fetchall()
+    conn.close()
+    return render_template('manage_users.html', users=users_list)
+
+
 # ==========================================================
 # Universal Document Hub & PDF RAG Routes (Any Sector / Syllabus)
 # ==========================================================
