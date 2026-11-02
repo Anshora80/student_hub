@@ -6,39 +6,17 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">AI Study Tutor 🤖</h1>
-        <p class="page-subtitle">Ask questions about programming syntax, algorithm logic, or database concepts.</p>
+        <p class="page-subtitle">Ask any conceptual doubt, definition, or question from your curriculum.</p>
     </div>
 </div>
 
 <div class="ai-tutor-container">
     <!-- Question Input Card -->
     <div class="content-card mb-4">
-        <form method="POST" action="{{ url_for('ai_tutor') }}" class="form-standard">
+        <form method="POST" action="{{ url_for('ai_tutor') }}" class="form-standard" autocomplete="off">
             <div class="form-group">
-                <label for="topic">Related Syllabus Topic (Optional):</label>
-                <select id="topic" name="topic" class="form-control">
-                    <option value="">-- General Computer Science Question --</option>
-                    {% for t in topics %}
-                        <option value="{{ t.name }}" {% if selected_topic == t.name %}selected{% endif %}>
-                            {{ t.subject_name }} &rarr; {{ t.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="query">Your Conceptual Question / Doubt: <span class="required">*</span></label>
-                <textarea id="query" name="query" class="form-control" rows="3" placeholder="e.g. What is the fundamental difference between a List and a Tuple in Python?" required>{{ user_query }}</textarea>
-            </div>
-
-            <div class="quick-prompts-wrapper">
-                <span class="qp-label">💡 Suggested Questions:</span>
-                <div class="chips-container">
-                    <button type="button" class="prompt-chip" onclick="fillQuery('Explain difference between a List and a Tuple with practical code examples.')">List vs Tuple</button>
-                    <button type="button" class="prompt-chip" onclick="fillQuery('How does Linear Search work and what is its worst-case time complexity?')">Linear Search Complexity</button>
-                    <button type="button" class="prompt-chip" onclick="fillQuery('Explain Primary Key vs Foreign Key with a simple database example.')">Primary Key vs Foreign Key</button>
-                    <button type="button" class="prompt-chip" onclick="fillQuery('What is the difference between break and continue statements in loops?')">Break vs Continue</button>
-                </div>
+                <label for="query">Your Question / Doubt: <span class="required">*</span></label>
+                <textarea id="query" name="query" class="form-control" rows="3" placeholder="Type your academic or conceptual question here..." autocomplete="off" required>{{ user_query }}</textarea>
             </div>
 
             <div class="form-action-row">
@@ -53,13 +31,10 @@
             <div class="ai-response-header">
                 <div>
                     <span class="badge badge-info">{{ ai_response.provider }}</span>
-                    {% if selected_topic %}
-                        <span class="badge badge-primary">{{ selected_topic }}</span>
-                    {% endif %}
                 </div>
                 <span class="ai-live-tag">
                     {% if ai_response.is_live_ai %}
-                        🟢 Live LLM Active
+                        🟢 Live AI Active
                     {% else %}
                         🟠 Smart Offline Mode
                     {% endif %}
@@ -75,17 +50,9 @@
             </div>
 
             <div class="ai-disclaimer">
-                ℹ️ <em>AI-generated educational explanation. Use alongside standard academic textbooks and lecture notes.</em>
+                ℹ️ <em>AI-generated educational explanation. Grounded in standard academic curriculum standards.</em>
             </div>
         </div>
     {% endif %}
 </div>
-
-<script>
-function fillQuery(text) {
-    const textarea = document.getElementById('query');
-    textarea.value = text;
-    textarea.focus();
-}
-</script>
 {% endblock %}

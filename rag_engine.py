@@ -31,6 +31,17 @@ def extract_text_and_chunks_from_pdf(pdf_path, chunk_size=800, chunk_overlap=150
         raise FileNotFoundError(f"PDF file not found at: {pdf_path}")
 
     reader = PdfReader(pdf_path)
+
+    # Handle standard PDF encryption (AES / RC4)
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception:
+            try:
+                reader.decrypt(b"")
+            except Exception as dec_err:
+                raise ValueError("This PDF is password-protected. Please upload an unprotected PDF file.")
+
     total_pages = len(reader.pages)
     if total_pages == 0:
         raise ValueError("The uploaded PDF has 0 pages.")
@@ -40,7 +51,10 @@ def extract_text_and_chunks_from_pdf(pdf_path, chunk_size=800, chunk_overlap=150
 
     for page_idx, page in enumerate(reader.pages):
         page_num = page_idx + 1
-        page_text = page.extract_text() or ""
+        try:
+            page_text = page.extract_text() or ""
+        except Exception:
+            page_text = ""
         # Clean up whitespace and excessive blank lines
         clean_text = re.sub(r'\s+', ' ', page_text).strip()
         if not clean_text:
@@ -76,7 +90,7 @@ def get_gemini_embedding(text):
     """
     load_dotenv(override=True)
     gemini_key = os.getenv('GEMINI_API_KEY', '').strip()
-    if not gemini_key or gemini_key == 'your_gemini_api_key_here':
+    if not gemini_key or gemini_key =='GEMINI_API_KEY':
         return None
 
     # Supported embedding models

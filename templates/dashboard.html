@@ -6,11 +6,51 @@
 <div class="dashboard-header">
     <div>
         <h1 class="page-title">Welcome back, {{ user.name }}! 👋</h1>
-        <p class="page-subtitle">{{ user.course }} — Semester {{ user.semester }} • Learning & Performance Overview</p>
+        <p class="page-subtitle">Personal Learning, Assessment & AI Study Hub</p>
     </div>
     <div class="header-action">
-        <a href="{{ url_for('subjects') }}" class="btn btn-primary">Browse Subjects & Take Quiz &rarr;</a>
+        <a href="{{ url_for('my_documents') }}" class="btn btn-primary">📄 Upload Study PDF &rarr;</a>
+        <a href="{{ url_for('subjects') }}" class="btn btn-outline">Browse Subjects</a>
     </div>
+</div>
+
+<!-- Uploaded Study Materials Card -->
+<div class="content-card mb-4">
+    <div class="card-header">
+        <h3>My Study Materials ({{ user_documents|length }})</h3>
+        <a href="{{ url_for('my_documents') }}" class="card-link">+ Upload New PDF</a>
+    </div>
+    {% if user_documents %}
+        <div class="documents-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+            {% for doc in user_documents %}
+                <div class="document-item-card" style="padding: 1rem;">
+                    <div class="doc-item-header">
+                        <span class="badge badge-info">{{ doc.total_pages }} Pages</span>
+                        {% if doc.best_score is not none %}
+                            <span class="badge {% if doc.best_score >= 80 %}badge-success{% elif doc.best_score >= 60 %}badge-warning{% else %}badge-danger{% endif %}">
+                                Score: {{ doc.best_score }}%
+                            </span>
+                        {% endif %}
+                    </div>
+                    <h4 class="doc-title" style="font-size: 1.05rem;">{{ doc.title }}</h4>
+                    <p class="doc-filename text-muted text-sm">{{ doc.original_filename }}</p>
+                    <div class="doc-actions-row" style="margin-top: 0.75rem;">
+                        <a href="{{ url_for('document_detail', doc_id=doc.id) }}" class="btn btn-primary btn-sm">
+                            Open Hub &rarr;
+                        </a>
+                        <a href="{{ url_for('document_quiz', doc_id=doc.id, batch=1) }}" class="btn btn-outline btn-sm">
+                            Take Quiz
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state" style="padding: 1.25rem 1rem;">
+            <p>Upload your own syllabus or notes to chat with your document and take AI-generated quizzes!</p>
+            <a href="{{ url_for('my_documents') }}" class="btn btn-primary btn-sm mt-2">Upload First PDF &rarr;</a>
+        </div>
+    {% endif %}
 </div>
 
 <!-- Recommended Next Action Banner -->

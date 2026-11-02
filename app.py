@@ -211,6 +211,7 @@ def dashboard():
     subject_stats = recommendation.get_student_subject_performance(user['id'])
     recommendations_data = recommendation.generate_personalized_recommendations(user['id'])
     recent_attempts = models.get_user_quiz_history(user['id'], limit=5)
+    user_documents = models.get_user_documents(user['id'])
 
     return render_template(
         'dashboard.html',
@@ -218,7 +219,8 @@ def dashboard():
         overall_stats=overall_stats,
         subject_stats=subject_stats,
         recommendations=recommendations_data,
-        recent_attempts=recent_attempts
+        recent_attempts=recent_attempts,
+        user_documents=user_documents
     )
 
 
