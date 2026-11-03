@@ -12,6 +12,10 @@ __pycache__/
 *.db
 *.sqlite3
 
+# Uploaded Files
+uploads/documents/*
+!uploads/documents/.gitkeep
+
 # Environment Variables
 .env
 

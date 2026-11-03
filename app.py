@@ -21,7 +21,7 @@ from flask import (
 )
 from dotenv import load_dotenv
 
-from database import get_db_connection, init_db
+from database import get_db_connection, init_db, seed_sample_data
 import models
 import quiz_logic
 import recommendation
@@ -41,6 +41,13 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 12 * 1024 * 1024  # Max 12MB upload limit
 ALLOWED_EXTENSIONS = {'pdf'}
+
+# Auto-initialize database tables and seed data on startup (Handles Gunicorn, Waitress & Local Dev)
+try:
+    init_db()
+    seed_sample_data()
+except Exception as _db_err:
+    app.logger.error(f"Database auto-initialization error: {_db_err}")
 
 
 def allowed_file(filename):

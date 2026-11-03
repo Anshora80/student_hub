@@ -15,14 +15,20 @@ DB_PATH = os.path.join(BASE_DIR, DB_NAME)
 
 def get_db_connection():
     """
-    Creates and returns a SQLite database connection with row factory enabled
-    and foreign key constraints enforced.
+    Creates and returns a SQLite database connection with row factory enabled,
+    foreign key constraints enforced, WAL mode for production concurrency,
+    and a 30-second timeout to prevent lock contentions.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
     # Enable accessing columns by name like dictionary keys: row['email']
     conn.row_factory = sqlite3.Row
     # Enforce foreign key constraints in SQLite
     conn.execute("PRAGMA foreign_keys = ON;")
+    # Set WAL mode for smooth concurrent reads and writes
+    try:
+        conn.execute("PRAGMA journal_mode = WAL;")
+    except Exception:
+        pass
     return conn
 
 
